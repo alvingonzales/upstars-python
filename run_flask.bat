@@ -1,0 +1,1 @@
+Scripts\python.exe src\upstars.py

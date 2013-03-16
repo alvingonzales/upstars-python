@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UP Stars Home</title>
+    <meta charset="utf-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/leaflet/leaflet.css" />
+    <!--[if lte IE 8]><link rel="stylesheet" href="static/leaflet/leaflet.ie.css" /><![endif]-->
+
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        html, body, #map {
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="static/leaflet/leaflet.js"></script>
+    <script>
+        var map = L.map('map', {
+            fadeAnimation: false,
+            maxBounds: [[90, -Infinity], [-90, Infinity]],
+            // Equirectangular projection
+            crs: L.CRS.EPSG4326,
+            //crs: L.CRS.Simple,
+            // inertia: true does not play well with maxBounds on IE
+            inertia: false
+        }).setView([0, 0], 2);
+
+        L.tileLayer('/tiles/{z}/{x}/{y}.svg', {
+            maxZoom: 10,
+            attribution: 'Hello World!'
+        }).addTo(map);
+
+        var popup = L.marker([0, 0])
+            .bindPopup("0,0")
+            .addTo(map);
+        var popup = L.marker([0, 90])
+            .bindPopup("0,90")
+            .addTo(map);
+        var popup = L.marker([0, 360])
+            .bindPopup("0,360")
+            .addTo(map);
+
+        var popup = L.marker([90, 0])
+            .bindPopup("90,0")
+            .addTo(map);
+        var popup = L.marker([45, 0])
+            .bindPopup("45,0")
+            .addTo(map);
+    </script>
+</body>
+</html>
