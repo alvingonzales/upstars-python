@@ -1,14 +1,13 @@
 
 class Star:
-    def __init__(self, id, name, ra, dec, mag):
+    def __init__(self, id, name, radec, mag):
         self.id = id
         self.name = name
-        self.ra = ra
-        self.dec = dec
+        self.radec = radec
         self.mag = mag
 
     def __str__(self):
-        return "<%s.Star(%s, %s, %s, %s, %s)>" % (__name__, self.id, self.name, self.ra, self.dec, self.mag)
+        return "<%s.Star(%s, %s, %s, %s)>" % (__name__, self.id, self.name, self.radec, self.mag)
 
 
 class Line:

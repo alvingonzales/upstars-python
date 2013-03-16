@@ -51,7 +51,7 @@ def create_star_index(zoom, stars):
 
 def main():
     import constellation_stars
-    stars = constellation_stars.get_stars()
+    stars = constellation_stars.get_sky_objects()
     indexes = create_star_index(4, stars)
     for index in indexes.keys():
         print index, len(indexes[index])

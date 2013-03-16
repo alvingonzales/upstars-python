@@ -15,25 +15,34 @@ def test():
 def svg(zoom, x, y):
     tile_size = 256.0
     csvsource = CsvSource()
-    bounds, stars = csvsource.get_stars(zoom, x, y)
+    bounds, sky_objects = csvsource.get_sky_objects(zoom, x, y)
     nw_ra, nw_dec, _, _ = bounds
     projector = _Projector(tile_size, bounds)
     projected_stars = []
     projected_lines = []
-    for star in stars:
-        if isinstance(star, Star):
+    for sky_object in sky_objects:
+        if isinstance(sky_object, Star):
+            star = sky_object
             size = (star.mag / 6) * 2 + 1
-            box_x, box_y = projector.project(star)
+            box_x, box_y = projector.project(star.radec)
             projected_stars.append((box_x, box_y, size))
 
-        elif isinstance(star, Line):
-            x1, y1 = projector.project(star.point1)
-            x2, y2 = projector.project(star.point2)
+        elif isinstance(sky_object, Line):
+            line = sky_object
+            x1, y1 = projector.project(line.point1)
+            x2, y2 = projector.project(line.point2)
             projected_lines.append((x1, y1, x2, y2))
 
     return Response(response=render_template("upstars_svgtiles_tile.svg.txt", z=zoom, ra=nw_ra, dec=nw_dec, x=x, y=y, stars=projected_stars, lines=projected_lines),
                     status=200,
                     mimetype="image/svg+xml")
+
+
+@blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
+def svg2(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
+    from upstars_lib.projectors import AzAltProjector, TileProjector
+
+
 
 
 class _Projector():

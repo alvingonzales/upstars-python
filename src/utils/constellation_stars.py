@@ -12,7 +12,7 @@ class Star:
     def __str__(self):
         return "<%s.Star(%s, %s, %s, %s, %s)>" % (__name__, self.id, self.name, self.ra, self.dec, self.mag)
 
-def get_stars():
+def get_sky_objects():
     csv_path = "ConstellationLinesAll2002.csv"
     if __name__ != "__main__":
         csv_path = os.path.join(os.path.dirname(__file__), csv_path)
@@ -42,7 +42,7 @@ def get_stars():
     return stars.values()
 
 def main():
-    for star in get_stars():
+    for star in get_sky_objects():
         print star
 
 if __name__ == "__main__":
