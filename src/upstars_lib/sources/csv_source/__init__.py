@@ -37,7 +37,7 @@ class _CsvSource:
                         stars[star_id] = Star(star_id, star_name, current_coords, float(star_magnitude))
 
                 if previous_coords and current_coords:
-                    lines.append((previous_coords, current_coords))
+                    lines.append(Line(previous_coords, current_coords))
 
                 previous_coords = current_coords
 
@@ -60,9 +60,9 @@ class _CsvSource:
 #            else:
 #                print star, " does not fit"
         for line in self.lines:
-            coords1, coords2 = line
-            if within_bounds(coords1, bounds) or within_bounds(coords2, bounds):
-                found_stars.append(Line(coords1, coords2))
+            point1, point2 = line.point1, line.point2
+            if within_bounds(point1, bounds) or within_bounds(point2, bounds):
+                found_stars.append(line)
 
         return bounds, found_stars
 
@@ -85,10 +85,21 @@ class _ProjectedCsvSource(_CsvSource):
     def __init__(self, year, month, date, hour, minute, longitude, latitude):
         _CsvSource.__init__(self)
         utc = datetime(year, month, date, hour, minute)
-        self.projector = AzAltProjector(utc, (longitude, latitude))
+        projector = AzAltProjector(utc, (longitude, latitude))
         projected_stars = []
-        #for star in self.stars:
+        for star in self.stars:
+            azalt = projector.project(star.radec)
+            projected_stars.append(Star(star.id, star.name, azalt, star.magnitude))
 
+        self.stars = projected_stars
+
+        projected_lines = []
+        for line in self.lines:
+            coords1 = projector.project(line.coords1)
+            coords2 = projector.project(line.coords2)
+            projected_lines.append(Line(coords1, coords2))
+
+        self.lines = projected_lines
 
 
 def main():
