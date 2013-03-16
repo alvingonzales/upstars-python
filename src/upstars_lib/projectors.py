@@ -1,5 +1,5 @@
 
-from math import asin, sin, cos, acos, floor
+from math import asin, sin, cos, acos, floor, pi
 from datetime import datetime
 
 from upstars_lib.coordinates import AzAlt
@@ -12,6 +12,29 @@ class AzAltProjector:
         self.lmst = _lmst(date, reference_lonlat.lon)
 
 
+    def compute_azalt(self, dec, lat, ha):
+        # convert to radians
+        dec = dec * pi/180
+        lat = lat * pi/180
+        ha = ha * pi/180
+
+        sin_alt = sin(dec) * sin(lat) + cos(dec) * cos(lat) * cos(ha)
+        alt = asin(sin_alt)
+        cos_az = (sin(dec) - sin(alt) * sin(lat)) / (cos(alt) * cos(lat))
+        az = acos(cos_az)
+
+        if sin(ha) < 0:
+            az = 2*pi - az
+
+        # convert result to degrees
+        az = az * 180/pi
+        alt = alt * 180/pi
+
+        # convert az back to hours for consistency
+        az = az / 15.0
+        return az, alt
+
+
     def project(self, object_radec):
         # http://www2.arnes.si/~gljsentvid10/horizon.html
         ra_h, dec = object_radec
@@ -19,16 +42,7 @@ class AzAltProjector:
         lon, lat = self.reference_lonlat
         ha = self.lmst - ra
 
-        sin_alt = sin(dec)*sin(lat) + cos(dec)*cos(lat)*cos(ha)
-        alt = asin(sin_alt)
-        cos_az = (sin(dec) - sin(alt)*sin(lat)) / (cos(alt)*cos(lat))
-        az_d = acos(cos_az)
-
-        if sin(ha) < 0:
-            az_d = 360 - az_d
-
-        # convert back to hours for consistency
-        az = az_d / 15.0
+        az, alt = self.compute_azalt(dec, lat, ha)
 
         return AzAlt(az, alt)
 
