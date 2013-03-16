@@ -1,7 +1,7 @@
 from flask import Blueprint, Response, render_template
 import random
 
-from upstars_lib.sources.csv_source import CsvSource
+from upstars_lib.sources.csv_source import CsvSource, ProjectedCsvSource
 from upstars_lib.sky_objects import Line, Star
 
 blueprint = Blueprint("upstars_svgtiles", __name__, template_folder='templates')
@@ -13,9 +13,19 @@ def test():
 
 @blueprint.route('/<int:zoom>/<int:x>/<int:y>.svg')
 def svg(zoom, x, y):
+    source = CsvSource()
+    return svg_tile(zoom, x, y, source)
+
+
+@blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
+def svg2(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
+    source = ProjectedCsvSource(year, month, day, hour, minute, longitude, latitude)
+    return svg_tile(zoom, x, y, source)
+
+
+def svg_tile(zoom, x, y, source):
     tile_size = 256.0
-    csvsource = CsvSource()
-    bounds, sky_objects = csvsource.get_sky_objects(zoom, x, y)
+    bounds, sky_objects = source.get_sky_objects(zoom, x, y)
     nw_ra, nw_dec, _, _ = bounds
     projector = _Projector(tile_size, bounds)
     projected_stars = []
@@ -38,13 +48,6 @@ def svg(zoom, x, y):
                     mimetype="image/svg+xml")
 
 
-@blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
-def svg2(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
-    from upstars_lib.projectors import AzAltProjector, TileProjector
-
-
-
-
 class _Projector():
     def __init__(self, tile_size, bounds):
         (nw_ra, nw_dec, se_ra, se_dec) = bounds
@@ -60,18 +63,19 @@ class _Projector():
         print self.pixels_per_dec
 
 
-    def project(self, star):
-        rel_ra = star.ra - self.nw_ra
-        rel_dec = self.nw_dec - star.dec
+    def project(self, point):
+        ra, dec = point
+        rel_ra = ra - self.nw_ra
+        rel_dec = self.nw_dec - dec
 
         # fixes for wrap arounds
-        if (self.nw_ra > star.ra):
-            rel_ra2 = star.ra - self.nw_ra + 24
+        if (self.nw_ra > ra):
+            rel_ra2 = ra - self.nw_ra + 24
             if abs(rel_ra) > abs(rel_ra2):
                 rel_ra = rel_ra2
 
-        if (self.se_ra < star.ra):
-            rel_ra2 = star.ra - self.nw_ra - 24
+        if (self.se_ra < ra):
+            rel_ra2 = ra - self.nw_ra - 24
             if abs(rel_ra) > abs(rel_ra2):
                 rel_ra = rel_ra2
 

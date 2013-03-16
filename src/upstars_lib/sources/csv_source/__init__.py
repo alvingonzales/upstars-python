@@ -5,11 +5,14 @@ from datetime import datetime
 import threading
 
 from upstars_lib.sky_objects import Star, Line
-from upstars_lib.coordinates import calculate_bounds, within_bounds, RaDec
+from upstars_lib.coordinates import calculate_bounds, within_bounds, RaDec, LonLat
 from upstars_lib.projectors import AzAltProjector
 
 class _CsvSource:
     def __init__(self):
+        self.stars, self.lines = self.load_from_file()
+
+    def load_from_file(self):
         csv_path = "ConstellationLinesAll2002.csv"
         if __name__ != "__main__":
             csv_path = os.path.join(os.path.dirname(__file__), csv_path)
@@ -44,8 +47,7 @@ class _CsvSource:
         finally:
             f.close()
 
-        self.stars = stars.values()
-        self.lines = lines
+        return stars.values(), lines
 
 
     def get_sky_objects(self, zoom, x, y):
@@ -56,6 +58,7 @@ class _CsvSource:
         found_stars = []
         for star in self.stars:
             if within_bounds(star.radec, bounds):
+                print star
                 found_stars.append(star)
 #            else:
 #                print star, " does not fit"
@@ -82,24 +85,48 @@ def CsvSource():
 
 
 class _ProjectedCsvSource(_CsvSource):
-    def __init__(self, year, month, date, hour, minute, longitude, latitude):
+    def __init__(self, year, month, day, hour, minute, longitude, latitude):
+        self.year = year
+        self.month = month
+        self.day = day
+        self.hour = hour
+        self.minute = minute
+        self.longitude = longitude
+        self.latitude = latitude
         _CsvSource.__init__(self)
-        utc = datetime(year, month, date, hour, minute)
-        projector = AzAltProjector(utc, (longitude, latitude))
-        projected_stars = []
-        for star in self.stars:
-            azalt = projector.project(star.radec)
-            projected_stars.append(Star(star.id, star.name, azalt, star.magnitude))
 
-        self.stars = projected_stars
+
+    def load_from_file(self):
+        stars, lines = _CsvSource.load_from_file(self)
+
+        utc = datetime(self.year, self.month, self.day, self.hour, self.minute)
+        projector = AzAltProjector(utc, LonLat(self.longitude, self.latitude))
+        projected_stars = []
+        for star in stars:
+            azalt = projector.project(star.radec)
+            projected_stars.append(Star(star.id, star.name, azalt, star.mag))
 
         projected_lines = []
-        for line in self.lines:
-            coords1 = projector.project(line.coords1)
-            coords2 = projector.project(line.coords2)
-            projected_lines.append(Line(coords1, coords2))
+        for line in lines:
+            point1 = projector.project(line.point1)
+            point2 = projector.project(line.point2)
+            projected_lines.append(Line(point1, point2))
 
-        self.lines = projected_lines
+        return projected_stars, projected_lines
+
+
+_projected_csvsources = {}
+_projected_csvsources_lock = threading.Lock()
+def ProjectedCsvSource(year, month, date, hour, minute, longitude, latitude):
+    _projected_csvsources_lock.acquire()
+    key = (year, month, date, hour, minute, longitude, latitude)
+    try:
+        if key not in _projected_csvsources:
+            _projected_csvsources[key] = _ProjectedCsvSource(year, month, date, hour, minute, longitude, latitude)
+    finally:
+        _projected_csvsources_lock.release()
+
+    return _projected_csvsources[key]
 
 
 def main():

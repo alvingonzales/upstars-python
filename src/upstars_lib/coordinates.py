@@ -22,8 +22,9 @@ def calculate_bounds(zoom, x, y):
     return (nw_ra, nw_dec, se_ra, se_dec)
 
 
-def within_bounds(star, bounds):
+def within_bounds(point, bounds):
+    ra, dec = point
     nw_ra, nw_dec, se_ra, se_dec = bounds
 
-    return (nw_ra <= star.ra and nw_dec >= star.dec
-        and se_ra > star.ra and se_dec < star.dec)
+    return (nw_ra <= ra and nw_dec >= dec
+        and se_ra > ra and se_dec < dec)
