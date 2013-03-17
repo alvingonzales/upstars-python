@@ -68,17 +68,6 @@ class _Projector():
         rel_ra = ra - self.nw_ra
         rel_dec = self.nw_dec - dec
 
-        # fixes for wrap arounds
-        if (self.nw_ra > ra):
-            rel_ra2 = ra - self.nw_ra + 24
-            if abs(rel_ra) > abs(rel_ra2):
-                rel_ra = rel_ra2
-
-        if (self.se_ra < ra):
-            rel_ra2 = ra - self.nw_ra - 24
-            if abs(rel_ra) > abs(rel_ra2):
-                rel_ra = rel_ra2
-
         box_x = rel_ra * self.pixels_per_ra
         box_y = rel_dec * self.pixels_per_dec
 

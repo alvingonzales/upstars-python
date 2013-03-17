@@ -5,7 +5,7 @@ from datetime import datetime
 import threading
 
 from upstars_lib.sky_objects import Star, Line
-from upstars_lib.coordinates import calculate_bounds, within_bounds, RaDec, LonLat
+from upstars_lib.coordinates import calculate_bounds, within_bounds, RaDec, LonLat, AzAlt
 from upstars_lib.projectors import AzAltProjector
 
 class _CsvSource:
@@ -64,10 +64,67 @@ class _CsvSource:
 #                print star, " does not fit"
         for line in self.lines:
             point1, point2 = line.point1, line.point2
+
             if within_bounds(point1, bounds) or within_bounds(point2, bounds):
-                found_stars.append(line)
+                # fixes for wrap arounds
+                if not within_bounds(point1, bounds):
+                    point1 = fix_wrap_around(point2, point1)
+                elif not within_bounds(point2, bounds):
+                    point2 = fix_wrap_around(point1, point2)
+
+                found_stars.append(Line(point1, point2))
+
+            else:
+                case1 = point1, fix_wrap_around(point1, point2)
+                case2 = point2, fix_wrap_around(point2, point1)
+
+                found = None
+                for case in [case1, case2]:
+                    found = check_if_line_goes_through(bounds, case)
+                    if found:
+                        break
+
+                if found:
+                    found_stars.append(found)
+
 
         return bounds, found_stars
+
+
+def fix_wrap_around(fixed_point, point):
+    if point.az < fixed_point.az:
+        offset = 24.0
+    else:
+        offset = -24.0
+
+    if abs(point.az + offset - fixed_point.az) < abs(point.az - fixed_point.az):
+        point = AzAlt(point.az+offset, point.alt)
+
+    return point
+
+
+def check_if_line_goes_through(bounds, case):
+    left, top, right, bottom = bounds
+    (x1, y1), (x2, y2) = case
+    a = (y1 - y2) / (x1 - x2)
+    b = y2 - a * x2
+    fx = lambda x:a * x + b
+    fy = lambda y:(y - b) / a
+
+    test_values = [
+        (fx(left), top, bottom),
+        (fx(right), top, bottom),
+        (fy(top), right, left),
+        (fy(bottom), right, left)
+        ]
+
+    found = None
+    for test_value, upper, lower in test_values:
+        if upper >= test_value and lower <= test_value:
+            found = Line(*case)
+            break
+
+    return found
 
 
 _csvsource = None
