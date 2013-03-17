@@ -15,6 +15,8 @@ def calculate_bounds(zoom, x, y):
     # ra_deg (right ascension) is 0h to 24h
     # dec (declination) is 180deg to -180deg
     nw_ra = x * ra_part_size
+    # compensate for leaflet
+    nw_ra = (nw_ra + 12.0) % 24.0
     nw_dec = (-y) * dec_part_size + 180.0
     se_ra = nw_ra + ra_part_size
     se_dec = nw_dec - dec_part_size
