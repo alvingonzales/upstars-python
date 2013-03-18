@@ -35,7 +35,7 @@ def svg_tile(zoom, x, y, source):
             star = sky_object
             size = (star.mag / 6) * 2 + 1
             box_x, box_y = projector.project(star.radec)
-            projected_stars.append((box_x, box_y, size))
+            projected_stars.append((box_x, box_y, size, star))
 
         elif isinstance(sky_object, Line):
             line = sky_object

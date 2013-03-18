@@ -58,7 +58,6 @@ def coord_to_horizon( utc, ra, dec, lat, lon ):
     if (sin(ha) > 0):
         hrz_azimuth = 360 - hrz_azimuth
 
-    print (utc, ra, dec, lat, lon, hrz_azimuth, hrz_altitude)
     return hrz_azimuth, hrz_altitude
 
 
@@ -73,8 +72,6 @@ def mean_sidereal_time(now, lon):
     hour = now.hour
     minute = now.minute
     second = now.second
-
-    print year, month, day, hour, minute, second
 
     if ((month == 1) or (month == 2)):
         year = year - 1
@@ -94,9 +91,6 @@ def mean_sidereal_time(now, lon):
     # the mean sidereal time in degrees
     mst = 280.46061837 + 360.98564736629*jd + 0.000387933*jt*jt - jt*jt*jt/38710000 + lon;
     mst = mst % 360.0
-    print "abcd", a, b, c, d
-    print "jd/jt", jd, jt
-    print "mst:", mst
     return mst
 
 

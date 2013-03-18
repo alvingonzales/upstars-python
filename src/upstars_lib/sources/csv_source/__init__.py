@@ -53,15 +53,12 @@ class _CsvSource:
     def get_sky_objects(self, zoom, x, y):
         bounds = calculate_bounds(zoom, x, y)
         (nw_ra, nw_dec, se_ra, se_dec) = bounds
-        print "getting stars between %s and %s" % ((nw_ra, nw_dec), (se_ra, se_dec))
 
         found_stars = []
         for star in self.stars:
             if within_bounds(star.radec, bounds):
-                print star
                 found_stars.append(star)
-#            else:
-#                print star, " does not fit"
+
         for line in self.lines:
             point1, point2 = line.point1, line.point2
 
@@ -112,15 +109,16 @@ def check_if_line_goes_through(bounds, case):
     fy = lambda y:(y - b) / a
 
     test_values = [
-        (fx(left), top, bottom),
-        (fx(right), top, bottom),
-        (fy(top), right, left),
-        (fy(bottom), right, left)
+        (fx(left), top, bottom, y1, y2),
+        (fx(right), top, bottom, y1, y2),
+        (fy(top), right, left, x1, x2),
+        (fy(bottom), right, left, x1, x2)
         ]
 
     found = None
-    for test_value, upper, lower in test_values:
-        if upper >= test_value and lower <= test_value:
+    for test_value, upper, lower, limit1, limit2 in test_values:
+        if (upper >= test_value and lower <= test_value
+            and limit1 >= test_value and limit2 <= test_value):
             found = Line(*case)
             break
 
