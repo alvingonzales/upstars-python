@@ -3,12 +3,13 @@ from math import asin, sin, cos, acos, floor, pi
 from datetime import datetime
 
 from upstars_lib.coordinates import AzAlt
-
+from utils.rotation import rotate_azalt
 
 class AzAltProjector:
-    def __init__(self, date, reference_lonlat):
+    def __init__(self, date, reference_lonlat, azalt_offsets=None):
         self.date = date
         self.reference_lonlat = reference_lonlat
+        self.azalt_offsets = azalt_offsets
 
 
     def project(self, object_radec):
@@ -17,6 +18,10 @@ class AzAltProjector:
         lon, lat = self.reference_lonlat
         az, alt = coord_to_horizon(self.date, ra, dec, lat, lon)
         az = az / 360 * 24
+
+        if self.azalt_offsets:
+            daz, dalt = self.azalt_offsets
+            az, alt = rotate_azalt(az, alt, daz, dalt)
 
         return AzAlt(az, alt)
 
