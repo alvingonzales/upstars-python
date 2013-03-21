@@ -118,7 +118,10 @@ def check_if_line_goes_through(bounds, case):
     found = None
     for test_value, upper, lower, limit1, limit2 in test_values:
         if (upper >= test_value and lower <= test_value
-            and limit1 >= test_value and limit2 <= test_value):
+            and (
+                 (limit1 > limit2 and limit1 >= test_value and limit2 <= test_value)
+                 or (limit2 > limit1 and limit2 >= test_value and limit1 <= test_value)
+                 )):
             found = Line(*case)
             break
 
