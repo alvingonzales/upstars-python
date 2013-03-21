@@ -1,25 +1,23 @@
-from flask import Blueprint, Response, render_template
 import random
+from flask import Blueprint, Response, render_template
+from google.appengine.api.memcache import Client as CacheClient
 
-from upstars_lib.sources.csv_source import CsvSource, ProjectedCsvSource
+from upstars_lib.sources.ondemand_source import OnDemandSource
 from upstars_lib.sky_objects import Line, Star
 
 blueprint = Blueprint("upstars_svgtiles", __name__, template_folder='templates')
 
-@blueprint.route('/')
-def test():
-    return "upstars_svgtiles: hello world"
-
-
-@blueprint.route('/<int:zoom>/<int:x>/<int:y>.svg')
-def svg(zoom, x, y):
-    source = CsvSource()
-    return svg_tile(zoom, x, y, source)
+@blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/precache')
+def test3(year, month, day, hour, minute, longitude, latitude):
+    source = OnDemandSource(year, month, day, hour, minute, longitude, latitude, 0, 0, CacheClient())
+    meta = source.pre_cache()
+    return str(meta)
 
 
 @blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
 def svg2(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
-    source = ProjectedCsvSource(year, month, day, hour, minute, longitude, latitude)
+
+    source = OnDemandSource(year, month, day, hour, minute, longitude, latitude, 0, 0, CacheClient())
     return svg_tile(zoom, x, y, source)
 
 
@@ -33,7 +31,7 @@ def svg_tile(zoom, x, y, source):
     for sky_object in sky_objects:
         if isinstance(sky_object, Star):
             star = sky_object
-            size = (star.mag / 6) * 2 + 1
+            size = (star.mag / 10) * 2 #+ 1
             box_x, box_y = projector.project(star.radec)
             projected_stars.append((box_x, box_y, size, star))
 
@@ -58,10 +56,6 @@ class _Projector():
         self.pixels_per_ra = tile_size / (se_ra - nw_ra)
         self.pixels_per_dec = tile_size / (nw_dec - se_dec)
 
-        print bounds
-        print self.pixels_per_ra
-        print self.pixels_per_dec
-
 
     def project(self, point):
         ra, dec = point
@@ -70,9 +64,6 @@ class _Projector():
 
         box_x = rel_ra * self.pixels_per_ra
         box_y = rel_dec * self.pixels_per_dec
-
-
-
 
         return box_x, box_y
 

@@ -24,7 +24,7 @@
     <script>
         var map = L.map('map', {
             fadeAnimation: false,
-            maxBounds: [[90, -Infinity], [-90, Infinity]],
+            maxBounds: [[60, -60], [-60, 60]],
             // Equirectangular projection
             crs: L.CRS.EPSG4326,
             //crs: L.CRS.Simple,
@@ -32,7 +32,7 @@
             inertia: false
         }).setView([0, 0], 2);
 
-        L.tileLayer('/tiles/2012/3/16/22/53/0/0/{z}/{x}/{y}.svg', {
+        L.tileLayer('/tiles/2012/3/16/14/53/0/0/{z}/{x}/{y}.svg', {
             maxZoom: 10,
             attribution: 'Hello World!'
         }).addTo(map);
