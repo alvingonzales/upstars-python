@@ -36,3 +36,6 @@ nosetests.xml
 /Include
 /Lib
 /Scripts
+/src/flask
+/src/jinja2
+/src/werkzeug
