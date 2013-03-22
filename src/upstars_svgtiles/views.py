@@ -1,6 +1,10 @@
 import random
 from flask import Blueprint, Response, render_template
-#from google.appengine.api.memcache import Client as CacheClient
+
+try:
+    from google.appengine.api.memcache import Client as CacheClient
+except ImportError:
+    CacheClient = None
 
 #from upstars_lib.sources.ondemand_source import OnDemandSource
 from upstars_lib.sources.indexed_source import IndexedSource
@@ -17,8 +21,12 @@ blueprint = Blueprint("upstars_svgtiles", __name__, template_folder='templates')
 
 @blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
 def svg2(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
+    if CacheClient:
+        cache = CacheClient()
+    else:
+        cache = None
 
-    source = IndexedSource(year, month, day, hour, minute, longitude, latitude, 0, 0)
+    source = IndexedSource(year, month, day, hour, minute, longitude, latitude, 0, 0, cache)
     return svg_tile(zoom, x, y, source)
 
 

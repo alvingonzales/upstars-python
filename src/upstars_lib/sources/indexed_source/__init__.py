@@ -4,6 +4,7 @@ import pickle
 from datetime import datetime
 from time import time
 from zipfile import ZipFile
+from logging import info
 
 from upstars_lib.coordinates import LonLat, AzAlt, get_tile_coords, \
     calculate_bounds, azalt_to_radec
@@ -15,14 +16,14 @@ __all__ = ['IndexedSource']
 
 
 class IndexedSource(object):
-    def __init__(self, year, month, day, hour, minute, longitude, latitude, az_offset=0, dec_offset=0):
+    def __init__(self, year, month, day, hour, minute, longitude, latitude, az_offset=0, dec_offset=0, cache=None):
         self.utc = datetime(year, month, day, hour, minute)
         self.reference_lonlat = LonLat(longitude, latitude)
         self.azalt_offsets = AzAlt(az_offset, dec_offset)
 
         self.projector = AzAltProjector(self.utc, self.reference_lonlat, self.azalt_offsets)
-        #self.cache_namespace = "tiles-%s/%s/%s/%s/%s/%s/%s/%s/%s" % (year, month, day, hour, minute, longitude, latitude, az_offset, dec_offset)
-        #self.cache = cache
+        self.cache = cache
+
 
     def get_sky_objects(self, zoom, x, y):
         bounds = calculate_bounds(zoom, x, y)
@@ -34,14 +35,22 @@ class IndexedSource(object):
         radec = azalt_to_radec(self.utc, AzAlt(mid_az, mid_dec), self.reference_lonlat)
         cx, cy = get_tile_coords(radec, zoom)
 
-        objects = load_tile(zoom, cx, cy)
+        objects = load_tile(zoom, cx, cy, self.cache)
         projected = perform_projections(objects, self.projector, (az1, az2))
 
         return bounds, projected
 
 
-def load_tile(zoom, x, y):
+def load_tile(zoom, x, y, cache=None):
+    if cache:
+        start = time()
+        result = cache.get("tile-%s-%s-%s" % (zoom, x, y))
+        if result:
+            info("Using cached tile retrieved %.1fs" % (time()-start))
+            return result
+
     if zoom in range(5, 11):
+        start = time()
         datafile = os.path.join(os.path.dirname(__file__), "%s.zip" % zoom)
         zf = ZipFile(datafile, "r")
         try:
@@ -52,6 +61,11 @@ def load_tile(zoom, x, y):
                 f.close()
         finally:
             zf.close()
+
+        if cache:
+            cache.set("tile-%s-%s-%s" % (zoom, x, y), result)
+
+        info("Loaded tile retrieved %.1fs" % (time()-start))
 
         return result
     else:
@@ -82,44 +96,7 @@ def perform_projections(sky_objects, projector, az_bounds):
         else:
             raise Exception("do not know how to handle %s" % sky_object)
 
-    print "completed %d projections after %.1f seconds" % (len(projected), time() - start)
-
+    info("completed %d projections after %.1f seconds" % (len(projected), time() - start))
     return projected
-
-
-def compose_tiles(projected_sky_objects):
-    start = time()
-    tiles = {}
-    for (p, r, mag, id) in projected_sky_objects:
-        for zoom in range(3, 10):
-            if mag < 4 + zoom:
-                x, y = get_tile_coords((p, r), zoom)
-                key = "%d-%d-%d" % (zoom, x, y)
-
-                if key not in tiles:
-                    tiles[key] = []
-
-                tiles[key].append((p, r, mag, id))
-
-    print "completed tiling %d after %.1f seconds" % (len(tiles), time() - start)
-
-    averages = {}
-    for k in tiles:
-        z = k.split("-")[0]
-        if z not in averages:
-            averages[z] = (0, 0)
-
-        sum, count = averages[z]
-        sum = sum + len(tiles[k])
-        count = count + 1
-        averages[z] = (sum, count)
-
-    stats = {}
-    stats["total tiles"] = len(tiles)
-    for z in sorted(averages.keys()):
-        stats["zoom %d" % zoom] = "%d tiles %.1f avg objects/tile" % (count, sum/float(count))
-
-
-    return stats, tiles
 
 
