@@ -29,7 +29,8 @@ def vector_to_azalt(v):
     if az < 0:
         az = az + 24
 
-    return round(az, 5), round(alt, 5)
+    #return round(az, 5), round(alt, 5)
+    return az, alt
 
 
 def rotate_azalt(az, alt, az_d, alt_d):

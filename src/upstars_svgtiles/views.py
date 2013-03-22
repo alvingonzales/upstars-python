@@ -1,23 +1,24 @@
 import random
 from flask import Blueprint, Response, render_template
-from google.appengine.api.memcache import Client as CacheClient
+#from google.appengine.api.memcache import Client as CacheClient
 
-from upstars_lib.sources.ondemand_source import OnDemandSource
+#from upstars_lib.sources.ondemand_source import OnDemandSource
+from upstars_lib.sources.indexed_source import IndexedSource
 from upstars_lib.sky_objects import Line, Star
 
 blueprint = Blueprint("upstars_svgtiles", __name__, template_folder='templates')
 
-@blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/precache')
-def test3(year, month, day, hour, minute, longitude, latitude):
-    source = OnDemandSource(year, month, day, hour, minute, longitude, latitude, 0, 0, CacheClient())
-    meta = source.pre_cache()
-    return str(meta)
+#@blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/precache')
+#def test3(year, month, day, hour, minute, longitude, latitude):
+#    source = OnDemandSource(year, month, day, hour, minute, longitude, latitude, 0, 0, CacheClient())
+#    meta = source.pre_cache()
+#    return str(meta)
 
 
 @blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
 def svg2(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
 
-    source = OnDemandSource(year, month, day, hour, minute, longitude, latitude, 0, 0, CacheClient())
+    source = IndexedSource(year, month, day, hour, minute, longitude, latitude, 0, 0)
     return svg_tile(zoom, x, y, source)
 
 
@@ -31,7 +32,7 @@ def svg_tile(zoom, x, y, source):
     for sky_object in sky_objects:
         if isinstance(sky_object, Star):
             star = sky_object
-            size = (star.mag / 10) * 2 #+ 1
+            size = (2**(zoom))/(2**star.mag) + .5
             box_x, box_y = projector.project(star.radec)
             projected_stars.append((box_x, box_y, size, star))
 
@@ -40,6 +41,8 @@ def svg_tile(zoom, x, y, source):
             x1, y1 = projector.project(line.point1)
             x2, y2 = projector.project(line.point2)
             projected_lines.append((x1, y1, x2, y2))
+        else:
+            raise Exception("cannot handle", sky_object)
 
     return Response(response=render_template("upstars_svgtiles_tile.svg.txt", z=zoom, ra=nw_ra, dec=nw_dec, x=x, y=y, stars=projected_stars, lines=projected_lines),
                     status=200,
