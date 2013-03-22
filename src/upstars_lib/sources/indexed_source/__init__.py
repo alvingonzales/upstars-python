@@ -1,15 +1,18 @@
 
-import pickle
-import gzip
 import os
-from time import time
-from datetime import datetime
-from upstars_lib.projectors import AzAltProjector
-from upstars_lib.coordinates import LonLat, AzAlt, get_tile_coords, calculate_bounds, azalt_to_radec
-from upstars_lib.sky_objects import Star, Line
 import pickle
+from datetime import datetime
+from time import time
+from zipfile import ZipFile
+
+from upstars_lib.coordinates import LonLat, AzAlt, get_tile_coords, \
+    calculate_bounds, azalt_to_radec
+from upstars_lib.projectors import AzAltProjector
+from upstars_lib.sky_objects import Star, Line
+
 
 __all__ = ['IndexedSource']
+
 
 class IndexedSource(object):
     def __init__(self, year, month, day, hour, minute, longitude, latitude, az_offset=0, dec_offset=0):
@@ -31,22 +34,28 @@ class IndexedSource(object):
         radec = azalt_to_radec(self.utc, AzAlt(mid_az, mid_dec), self.reference_lonlat)
         cx, cy = get_tile_coords(radec, zoom)
 
-        celestial_index = "%s-%s-%s" % (zoom, int(cx), int(cy))
-        objects_filepath = "indexes/%s/%s.dat" % (zoom, celestial_index)
-        if os.path.exists(objects_filepath):
-            f = open(objects_filepath, "rb")
-            try:
-                objects = pickle.load(f)
-            finally:
-                f.close()
-
-            projected = perform_projections(objects, self.projector, (az1, az2))
-
-        else:
-            raise Exception(objects_filepath)
-
+        objects = load_tile(zoom, cx, cy)
+        projected = perform_projections(objects, self.projector, (az1, az2))
 
         return bounds, projected
+
+
+def load_tile(zoom, x, y):
+    if zoom in range(5, 11):
+        datafile = os.path.join(os.path.dirname(__file__), "%s.zip" % zoom)
+        zf = ZipFile(datafile, "r")
+        try:
+            f = zf.open("%s-%s-%s.dat" % (zoom, int(x), int(y)))
+            try:
+                result = pickle.load(f)
+            finally:
+                f.close()
+        finally:
+            zf.close()
+
+        return result
+    else:
+        raise Exception("Invalid zoom", zoom)
 
 
 def perform_projections(sky_objects, projector, az_bounds):
