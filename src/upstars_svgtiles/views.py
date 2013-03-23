@@ -1,5 +1,7 @@
 import random
+from time import time
 from flask import Blueprint, Response, render_template
+from logging import info
 
 try:
     from google.appengine.api.memcache import Client as CacheClient
@@ -12,27 +14,40 @@ from upstars_lib.sky_objects import Line, Star
 
 blueprint = Blueprint("upstars_svgtiles", __name__, template_folder='templates')
 
-#@blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/precache')
-#def test3(year, month, day, hour, minute, longitude, latitude):
-#    source = OnDemandSource(year, month, day, hour, minute, longitude, latitude, 0, 0, CacheClient())
-#    meta = source.pre_cache()
-#    return str(meta)
-
-
 @blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
 def svg2(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
-    if CacheClient:
-        cache = CacheClient()
-    else:
-        cache = None
+    start = time()
+    try:
+        if CacheClient:
+            cache = CacheClient()
+        else:
+            cache = None
 
-    source = IndexedSource(year, month, day, hour, minute, longitude, latitude, 0, 0, cache)
-    return svg_tile(zoom, x, y, source)
+        source = IndexedSource(year, month, day, hour, minute, longitude, latitude, 0, 0, cache)
+
+        bounds, sky_objects = source.get_sky_objects(zoom, x, y)
+        return svg_tile(zoom, x, y, bounds, sky_objects)
+    finally:
+        info("Tile generation end %.1fs" % (time() - start))
+
+@blueprint.route('/lines/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
+def svg_lines(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
+    start = time()
+    try:
+        if CacheClient:
+            cache = CacheClient()
+        else:
+            cache = None
+
+        source = IndexedSource(year, month, day, hour, minute, longitude, latitude, 0, 0, cache)
+        bounds, sky_objects = source.get_constellation_lines(zoom, x, y)
+        return svg_tile(zoom, x, y, bounds, sky_objects)
+    finally:
+        info("Tile generation end %.1fs" % (time() - start))
 
 
-def svg_tile(zoom, x, y, source):
+def svg_tile(zoom, x, y, bounds, sky_objects):
     tile_size = 256.0
-    bounds, sky_objects = source.get_sky_objects(zoom, x, y)
     nw_ra, nw_dec, _, _ = bounds
     projector = _Projector(tile_size, bounds)
     projected_stars = []
