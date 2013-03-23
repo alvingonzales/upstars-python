@@ -12,7 +12,7 @@ except ImportError:
 from upstars_lib.sources.indexed_source import IndexedSource
 from upstars_lib.sky_objects import Line, Star
 
-blueprint = Blueprint("upstars_svgtiles", __name__, template_folder='templates')
+blueprint = Blueprint("upstars_svgtiles", __name__, template_folder='templates', static_folder="static")
 
 @blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
 def svg2(year, month, day, hour, minute, longitude, latitude, zoom, x, y):

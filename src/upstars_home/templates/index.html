@@ -23,7 +23,7 @@
     <script src="static/leaflet/leaflet.js"></script>
     <script>
         var map = L.map('map', {
-            fadeAnimation: false,
+            //fadeAnimation: false,
             maxBounds: [[60, -60], [-60, 60]],
             // Equirectangular projection
             crs: L.CRS.EPSG4326,
@@ -32,15 +32,28 @@
             inertia: false
         }).setView([0, 0], 2);
 
-        L.tileLayer('/tiles/2012/3/16/14/53/0/0/{z}/{x}/{y}.svg', {
-            maxZoom: 10,
-            attribution: 'Hello World!'
+        L.tileLayer('/tiles/static/white.svg', {
+            maxZoom: 9,
         }).addTo(map);
 
-        L.tileLayer('/tiles/lines/2012/3/16/14/53/0/0/{z}/{x}/{y}.svg', {
-            maxZoom: 9,
-            attribution: 'Hello World!'
+        L.tileLayer('/tiles/2012/3/16/14/53/0/0/{z}/{x}/{y}.svg', {
+            maxZoom: 5,
+            zIndex: 2,
+            attribution: 'HYG Database'
         }).addTo(map);
+
+        line_layer = L.tileLayer('/tiles/lines/2012/3/16/14/53/0/0/{z}/{x}/{y}.svg', {
+            maxZoom: 9,
+            zIndex: 1,
+            attribution: 'SFA Constellation Lines'
+        });
+        line_layer.addTo(map);
+
+        L.control.layers(
+            {},
+            {"Constellation Lines" :line_layer},
+            { autoZIndex: false }
+        ).addTo(map);
 
         /*var popup = L.marker([0, 0])
             .bindPopup("0,0")
