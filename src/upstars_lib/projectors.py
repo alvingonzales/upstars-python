@@ -23,10 +23,11 @@ class AzAltProjector:
 
 
     def unproject(self, azalt):
-        az, alt = azalt
         if self.azalt_offsets:
+            az, alt = azalt
             daz, dalt = self.azalt_offsets
             az, alt = rotate_azalt(az, alt, daz, dalt, True)
+            azalt = AzAlt(az, alt)
 
         ra, dec = azalt_to_radec(self.date, azalt, self.reference_lonlat)
 
