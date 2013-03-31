@@ -40,13 +40,13 @@ def rotate_azalt(az, alt, az_d, alt_d, reverse=False):
 
     if not reverse:
         transforms = [
-            (az_d, "Z"),
-            (alt_d, "Y")
+            (-az_d, "Z"),
+            (-alt_d, "Y")
         ]
     else:
         transforms = [
-            (-alt_d, "Y"),
-            (-az_d, "Z")
+            (alt_d, "Y"),
+            (az_d, "Z")
         ]
 
     for offset, axis in transforms:
@@ -68,6 +68,14 @@ def main():
             azalt = vector_to_azalt(v)
             assert azalt == original, (azalt, original)
 
+def main2():
+    for az in range(1, 25):
+        for alt in range(-89, 89):
+            raz, ralt = rotate_azalt(10, 0, az, alt)
+            oaz, oalt = rotate_azalt(raz, ralt, az, alt, True)
+            oaz = round(oaz, 5) % 24.0
+            oalt = round(oalt, 5) % 360.0
+            assert (oaz, oalt) == (10, 0),  (oaz, oalt)
 
 if __name__ == "__main__":
-    main()
+    main2()
