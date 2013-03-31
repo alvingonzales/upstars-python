@@ -14,8 +14,8 @@ from upstars_lib.sky_objects import Line, Star
 
 blueprint = Blueprint("upstars_svgtiles", __name__, template_folder='templates', static_folder="static")
 
-@blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
-def svg2(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
+@blueprint.route('/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:azd>/<int:altd>/<int:zoom>/<int:x>/<int:y>.svg')
+def svg2(year, month, day, hour, minute, longitude, latitude, azd, altd, zoom, x, y):
     start = time()
     try:
         if CacheClient:
@@ -23,15 +23,18 @@ def svg2(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
         else:
             cache = None
 
-        source = IndexedSource(year, month, day, hour, minute, longitude, latitude, 0, 0, cache)
+        longitude = longitude / 360.0 * 24.0
+        azd = azd / 360.0 * 24.0
+
+        source = IndexedSource(year, month, day, hour, minute, longitude, latitude, azd, altd, cache)
 
         bounds, sky_objects = source.get_sky_objects(zoom, x, y)
         return svg_tile(zoom, x, y, bounds, sky_objects)
     finally:
         info("Tile generation end %.1fs" % (time() - start))
 
-@blueprint.route('/lines/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:zoom>/<int:x>/<int:y>.svg')
-def svg_lines(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
+@blueprint.route('/lines/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:azd>/<int:altd>/<int:zoom>/<int:x>/<int:y>.svg')
+def svg_lines(year, month, day, hour, minute, longitude, latitude, azd, altd, zoom, x, y):
     start = time()
     try:
         if CacheClient:
@@ -39,7 +42,10 @@ def svg_lines(year, month, day, hour, minute, longitude, latitude, zoom, x, y):
         else:
             cache = None
 
-        source = IndexedSource(year, month, day, hour, minute, longitude, latitude, 0, 0, cache)
+        longitude = longitude / 360.0 * 24.0
+        azd = azd / 360.0 * 24.0
+
+        source = IndexedSource(year, month, day, hour, minute, longitude, latitude, azd, altd, cache)
         bounds, sky_objects = source.get_constellation_lines(zoom, x, y)
         return svg_tile(zoom, x, y, bounds, sky_objects)
     finally:
@@ -55,7 +61,7 @@ def svg_tile(zoom, x, y, bounds, sky_objects):
     for sky_object in sky_objects:
         if isinstance(sky_object, Star):
             star = sky_object
-            size = (2**(zoom))/(2**star.mag) + .5
+            size = (2**(zoom-1))/(2**star.mag) + .5
             box_x, box_y = projector.project(star.radec)
             projected_stars.append((box_x, box_y, size, star))
 

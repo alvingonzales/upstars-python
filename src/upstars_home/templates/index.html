@@ -13,64 +13,44 @@
             padding: 0;
             margin: 0;
         }
+
         html, body, #map {
             height: 100%;
         }
+
+        #telescope_controls {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            text-align: center;
+            z-index: 1;
+            background-color: white;
+            padding: 10px;
+        }
     </style>
+    <script src="static/jquery/jquery-1.9.1.min.js"></script>
+    <script src="static/jquery/jquery.knob.js"></script>
 </head>
 <body>
+    <div id="telescope_controls">
+        <input type="text" value="0" id="telescope_alt" name="dec" data-thickness=".7" data-cursor="60" data-anglearc="75" data-min="0" data-max="75" data-angleoffset="270" data-height="150" data-width="150" data-displayinput="false" />
+        <input type="text" value="0" id="telescope_az" name="ra" data-thickness=".7" data-cursor="60" data-min="0" data-max="360" data-height="150" data-width="150" data-displayinput="false" /><br/>
+        <input type="button" value="aim" onclick="LoadTiles(telescope_az.value, telescope_alt.value)" />
+    </div>
+
     <div id="map"></div>
     <script src="static/leaflet/leaflet.js"></script>
+    <script src="static/skymap.js"></script>
     <script>
-        var map = L.map('map', {
-            //fadeAnimation: false,
-            maxBounds: [[60, -60], [-60, 60]],
-            // Equirectangular projection
-            crs: L.CRS.EPSG4326,
-            //crs: L.CRS.Simple,
-            // inertia: true does not play well with maxBounds on IE
-            inertia: false
-        }).setView([0, 0], 2);
-
-        L.tileLayer('/tiles/static/white.svg', {
-            maxZoom: 9,
-        }).addTo(map);
-
-        L.tileLayer('/tiles/2012/3/16/14/53/0/0/{z}/{x}/{y}.svg', {
-            maxZoom: 5,
-            zIndex: 2,
-            attribution: 'HYG Database'
-        }).addTo(map);
-
-        line_layer = L.tileLayer('/tiles/lines/2012/3/16/14/53/0/0/{z}/{x}/{y}.svg', {
-            maxZoom: 9,
-            zIndex: 1,
-            attribution: 'SFA Constellation Lines'
+    $(function() {
+        $("#telescope_alt").knob();
+        $("#telescope_az").knob({
+            draw : function () {
+                this.g.fillText("Hello!", 10, 20);
+                return true;
+            }
         });
-        line_layer.addTo(map);
-
-        L.control.layers(
-            {},
-            {"Constellation Lines" :line_layer},
-            { autoZIndex: false }
-        ).addTo(map);
-
-        /*var popup = L.marker([0, 0])
-            .bindPopup("0,0")
-            .addTo(map);
-        var popup = L.marker([0, 90])
-            .bindPopup("0,90")
-            .addTo(map);
-        var popup = L.marker([0, 360])
-            .bindPopup("0,360")
-            .addTo(map);
-
-        var popup = L.marker([90, 0])
-            .bindPopup("90,0")
-            .addTo(map);
-        var popup = L.marker([45, 0])
-            .bindPopup("45,0")
-            .addTo(map);*/
+    });
     </script>
 </body>
 </html>
