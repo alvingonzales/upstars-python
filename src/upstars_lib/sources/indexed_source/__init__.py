@@ -33,7 +33,7 @@ class IndexedSource(object):
         mid_dec = (dec1 - dec2) / 2.0 + dec2
         assert get_tile_coords((mid_az, mid_dec), zoom) == (x, y), get_tile_coords((mid_az, mid_dec), zoom)
 
-        radec = azalt_to_radec(self.utc, AzAlt(mid_az, mid_dec), self.reference_lonlat)
+        radec = self.projector.unproject(AzAlt(mid_az, mid_dec))
         cx, cy = get_tile_coords(radec, zoom)
 
         return cx, cy, az1, az2, bounds
@@ -41,7 +41,7 @@ class IndexedSource(object):
     def get_sky_objects(self, zoom, x, y):
         cx, cy, az1, az2, bounds = self.get_coords(zoom, x, y)
         objects = load_tile(zoom, cx, cy, cache=self.cache)
-        projected = perform_projections(objects, self.projector, (az1, az2))
+        projected = perform_star_projections(objects, self.projector, (az1, az2))
 
         return bounds, projected
 
@@ -49,12 +49,16 @@ class IndexedSource(object):
     def get_constellation_lines(self, zoom, x, y):
         cx, cy, az1, az2, bounds = self.get_coords(zoom, x, y)
         objects = load_line_tile(zoom, cx, cy, self.cache)
-        projected = perform_projections(objects, self.projector, (az1, az2))
+        projected = perform_line_projections(objects, self.projector, (az1, az2))
 
         return bounds, projected
 
 
-def load_tile(zoom, x, y, cache=None, prefix="tile-"):
+    def get_labels(self, zoom, x, y):
+        pass
+
+
+def load_tile(zoom, x, y, cache=None, prefix="stars-"):
     tile_id = prefix + ("%s-%s-%s" % (zoom, int(x), int(y)))
     tile_filename = "%s-%s-%s.dat" % (zoom, int(x), int(y))
     tile_zip = prefix + ("%s.zip" % zoom)
@@ -66,7 +70,7 @@ def load_tile(zoom, x, y, cache=None, prefix="tile-"):
             info("Using cached tile %s retrieved %.1fs" % (tile_id, time()-start))
             return result
 
-    if zoom in range(5, 11):
+    if zoom in range(0, 11):
         datafile = os.path.join(os.path.dirname(__file__), tile_zip)
         zf = ZipFile(datafile, "r")
         try:
@@ -102,23 +106,31 @@ def project_point(projector, az1, az2, radec):
     return p, r
 
 
-def perform_projections(sky_objects, projector, az_bounds):
+def perform_star_projections(sky_objects, projector, az_bounds):
     start = time()
     projected = []
     az1, az2 = az_bounds
 
     for sky_object in sky_objects:
-        if isinstance(sky_object, Star):
-            p, r = project_point(projector, az1, az2, sky_object.radec)
-            projected.append(Star(sky_object.id, sky_object.name, AzAlt(p, r), sky_object.mag))
+        id, ra, dec, mag = sky_object
 
-        else:
-            radec1, radec2 = sky_object
-            azalt1 = project_point(projector, az1, az2, radec1)
-            azalt2 = project_point(projector, az1, az2, radec2)
-            projected.append(Line(AzAlt(*azalt1), AzAlt(*azalt2)))
+        p, r = project_point(projector, az1, az2, (ra, dec))
+        projected.append(Star(id, None, AzAlt(p, r), mag))
 
-    info("completed %d projections after %.1f seconds" % (len(projected), time() - start))
+    info("Completed %d projections after %.1f seconds" % (len(projected), time() - start))
     return projected
 
 
+def perform_line_projections(sky_objects, projector, az_bounds):
+    start = time()
+    projected = []
+    az1, az2 = az_bounds
+
+    for sky_object in sky_objects:
+        radec1, radec2 = sky_object
+        azalt1 = project_point(projector, az1, az2, radec1)
+        azalt2 = project_point(projector, az1, az2, radec2)
+        projected.append(Line(AzAlt(*azalt1), AzAlt(*azalt2)))
+
+    info("completed %d projections after %.1f seconds" % (len(projected), time() - start))
+    return projected
