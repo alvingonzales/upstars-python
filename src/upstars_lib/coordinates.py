@@ -77,6 +77,8 @@ def azalt_to_radec(utc, azalt, lonlat):
 
     az = az * pi/12
     alt = alt * pi/180
+    lon = lon * pi/12
+    lat = lat * pi/180
 
     sin_dec = cos(az)*cos(alt)*cos(lat) + sin(alt)*sin(lat)
     dec = asin(sin_dec)
@@ -162,7 +164,7 @@ def main():
     for r in range(0, 24*2):
         ra = 0.5*r
         for dec in range(-89, 90):
-            lonlat = LonLat(0, 0)
+            lonlat = LonLat(0, 10)
             radec = RaDec(ra, dec)
             utc = datetime.now()
 
