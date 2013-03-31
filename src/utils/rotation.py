@@ -33,17 +33,26 @@ def vector_to_azalt(v):
     return az, alt
 
 
-def rotate_azalt(az, alt, az_d, alt_d):
+def rotate_azalt(az, alt, az_d, alt_d, reverse=False):
     v = azalt_to_vector(az, alt)
     az_d = az_d * pi/12.0
     alt_d = alt_d * pi/180.0
 
-    if az_d:
-        q = Matrix.rotate("Z", az_d)
-        v = q*v
-    if alt_d:
-        q = Matrix.rotate("Y", alt_d)
-        v = q*v
+    if not reverse:
+        transforms = [
+            (az_d, "Z"),
+            (alt_d, "Y")
+        ]
+    else:
+        transforms = [
+            (-alt_d, "Y"),
+            (-az_d, "Z")
+        ]
+
+    for offset, axis in transforms:
+        if offset:
+            q = Matrix.rotate(axis, offset)
+            v = q*v
 
     v = Vector(v[0], v[1], v[2])
 
