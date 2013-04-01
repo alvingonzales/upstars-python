@@ -29,7 +29,7 @@ def svg2(year, month, day, hour, minute, longitude, latitude, azd, altd, zoom, x
         source = IndexedSource(year, month, day, hour, minute, longitude, latitude, azd, altd, cache)
 
         bounds, sky_objects = source.get_sky_objects(zoom, x, y)
-        return svg_tile(zoom, x, y, bounds, sky_objects)
+        return svg_star_tile(zoom, x, y, bounds, sky_objects)
     finally:
         info("Tile generation end %.1fs" % (time() - start))
 
@@ -47,34 +47,42 @@ def svg_lines(year, month, day, hour, minute, longitude, latitude, azd, altd, zo
 
         source = IndexedSource(year, month, day, hour, minute, longitude, latitude, azd, altd, cache)
         bounds, sky_objects = source.get_constellation_lines(zoom, x, y)
-        return svg_tile(zoom, x, y, bounds, sky_objects)
+        return svg_line_tile(zoom, x, y, bounds, sky_objects)
     finally:
         info("Tile generation end %.1fs" % (time() - start))
 
 
-def svg_tile(zoom, x, y, bounds, sky_objects):
+def svg_star_tile(zoom, x, y, bounds, sky_objects):
+    tile_size = 256.0
+    nw_ra, nw_dec, _, _ = bounds
+    projector = _Projector(tile_size, bounds)
+    projected_stars = []
+    for sky_object in sky_objects:
+        star = sky_object
+        size = (2**(zoom-1))/(2**star.mag) + .5
+        box_x, box_y = projector.project(star.radec)
+        projected_stars.append((box_x, box_y, size, star))
+
+    response = render_template("upstars_svgtiles_tile.svg.txt", z=zoom, ra=nw_ra, dec=nw_dec, x=x, y=y, stars=projected_stars)
+    return Response(response=response,
+                    status=200,
+                    mimetype="image/svg+xml")
+
+
+def svg_line_tile(zoom, x, y, bounds, sky_objects):
     tile_size = 256.0
     nw_ra, nw_dec, _, _ = bounds
     projector = _Projector(tile_size, bounds)
     projected_stars = []
     projected_lines = []
+
     for sky_object in sky_objects:
-        if isinstance(sky_object, Star):
-            star = sky_object
-            size = (2**(zoom-1))/(2**star.mag) + .5
-            box_x, box_y = projector.project(star.radec)
-            projected_stars.append((box_x, box_y, size, star))
-            response = render_template("upstars_svgtiles_tile.svg.txt", z=zoom, ra=nw_ra, dec=nw_dec, x=x, y=y, stars=projected_stars)
+        line = sky_object
+        x1, y1 = projector.project(line.point1)
+        x2, y2 = projector.project(line.point2)
+        projected_lines.append((x1, y1, x2, y2))
 
-        elif isinstance(sky_object, Line):
-            line = sky_object
-            x1, y1 = projector.project(line.point1)
-            x2, y2 = projector.project(line.point2)
-            projected_lines.append((x1, y1, x2, y2))
-            response = render_template("upstars_svgtiles_linetile.svg.txt", lines=projected_lines)
-        else:
-            raise Exception("cannot handle", sky_object)
-
+    response = render_template("upstars_svgtiles_linetile.svg.txt", lines=projected_lines)
     return Response(response=response,
                     status=200,
                     mimetype="image/svg+xml")
