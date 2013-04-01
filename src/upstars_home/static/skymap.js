@@ -40,7 +40,7 @@ function LoadTiles(az_offset, alt_offset) {
         az_offset: az_offset,
         alt_offset: alt_offset,
         maxZoom: 8,
-        zIndex: 2,
+        zIndex: 1,
         attribution: 'HYG Database'
     });
     starLayer.addTo(map);
@@ -49,7 +49,7 @@ function LoadTiles(az_offset, alt_offset) {
         az_offset: az_offset,
         alt_offset: alt_offset,
         maxZoom: 9,
-        zIndex: 1,
+        zIndex: 2,
         attribution: 'SFA Constellation Lines'
     });
     constellationLayer.addTo(map);

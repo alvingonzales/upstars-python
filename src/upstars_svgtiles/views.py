@@ -64,16 +64,18 @@ def svg_tile(zoom, x, y, bounds, sky_objects):
             size = (2**(zoom-1))/(2**star.mag) + .5
             box_x, box_y = projector.project(star.radec)
             projected_stars.append((box_x, box_y, size, star))
+            response = render_template("upstars_svgtiles_tile.svg.txt", z=zoom, ra=nw_ra, dec=nw_dec, x=x, y=y, stars=projected_stars)
 
         elif isinstance(sky_object, Line):
             line = sky_object
             x1, y1 = projector.project(line.point1)
             x2, y2 = projector.project(line.point2)
             projected_lines.append((x1, y1, x2, y2))
+            response = render_template("upstars_svgtiles_linetile.svg.txt", lines=projected_lines)
         else:
             raise Exception("cannot handle", sky_object)
 
-    return Response(response=render_template("upstars_svgtiles_tile.svg.txt", z=zoom, ra=nw_ra, dec=nw_dec, x=x, y=y, stars=projected_stars, lines=projected_lines),
+    return Response(response=response,
                     status=200,
                     mimetype="image/svg+xml")
 

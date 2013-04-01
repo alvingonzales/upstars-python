@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256px" height="256px">
+    {% for x1, y1, x2, y2 in lines %}
+    <line x1="{{x1}}" y1="{{y1}}" x2="{{x2}}" y2="{{y2}}" style="stroke:rgb(255,255,255);stroke-width:0.5;stroke-opacity:.5"/>
+    {% endfor %}
+</svg>
