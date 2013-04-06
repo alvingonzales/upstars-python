@@ -1,11 +1,11 @@
 from flask import Flask, Response
 
-import upstars_home
-import upstars_svgtiles
+import upstars_web.home
+import upstars_web.svgtiles
 
 app = Flask(__name__, static_folder='rootstatic')
-app.register_blueprint(upstars_home.blueprint)
-app.register_blueprint(upstars_svgtiles.blueprint, url_prefix='/tiles')
+app.register_blueprint(upstars_web.home.blueprint)
+app.register_blueprint(upstars_web.svgtiles.blueprint, url_prefix='/tiles')
 
 if __name__ == "__main__":
     @app.route("/debug/routes")
@@ -19,4 +19,4 @@ if __name__ == "__main__":
                         status=200,
                         mimetype="text/plain")
 
-    app.run(host="0.0.0.0", debug=True, threaded=True)
+    app.run(host="0.0.0.0", debug=True, threaded=False)
