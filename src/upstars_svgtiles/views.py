@@ -52,6 +52,26 @@ def svg_lines(year, month, day, hour, minute, longitude, latitude, azd, altd, zo
         info("Tile generation end %.1fs" % (time() - start))
 
 
+@blueprint.route('/labels/<int:year>/<int:month>/<int:day>/<int:hour>/<int:minute>/<int:longitude>/<int:latitude>/<int:azd>/<int:altd>/<int:zoom>/<int:x>/<int:y>.svg')
+def svg_labels(year, month, day, hour, minute, longitude, latitude, azd, altd, zoom, x, y):
+    start = time()
+    try:
+        if CacheClient:
+            cache = CacheClient()
+        else:
+            cache = None
+
+        longitude = longitude / 360.0 * 24.0
+        azd = azd / 360.0 * 24.0
+
+        source = IndexedSource(year, month, day, hour, minute, longitude, latitude, azd, altd, cache)
+
+        bounds, sky_objects = source.get_labels(zoom, x, y)
+        return svg_label_tile(zoom, x, y, bounds, sky_objects)
+    finally:
+        info("Tile generation end %.1fs" % (time() - start))
+
+
 def svg_star_tile(zoom, x, y, bounds, sky_objects):
     tile_size = 256.0
     nw_ra, nw_dec, _, _ = bounds
@@ -64,6 +84,24 @@ def svg_star_tile(zoom, x, y, bounds, sky_objects):
         projected_stars.append((box_x, box_y, size, star))
 
     response = render_template("upstars_svgtiles_tile.svg.txt", z=zoom, ra=nw_ra, dec=nw_dec, x=x, y=y, stars=projected_stars)
+    return Response(response=response,
+                    status=200,
+                    mimetype="image/svg+xml")
+
+
+def svg_label_tile(zoom, x, y, bounds, sky_objects):
+    tile_size = 256.0
+    nw_ra, nw_dec, _, _ = bounds
+    projector = _Projector(tile_size, bounds)
+    projected_stars = []
+    for sky_object in sky_objects:
+        star = sky_object
+        box_x, box_y = projector.project(star.radec)
+        box_x = box_x + 4
+        box_y = box_y + 4
+        projected_stars.append((box_x, box_y, star))
+
+    response = render_template("upstars_svgtiles_labeltile.svg.txt", z=zoom, ra=nw_ra, dec=nw_dec, x=x, y=y, stars=projected_stars)
     return Response(response=response,
                     status=200,
                     mimetype="image/svg+xml")

@@ -34,20 +34,24 @@ class IndexedSource(object):
         assert get_tile_coords((mid_az, mid_dec), zoom) == (x, y), get_tile_coords((mid_az, mid_dec), zoom)
 
         radec = self.projector.unproject(AzAlt(mid_az, mid_dec))
+        #assert self.projector.project(radec) == AzAlt(mid_az, mid_dec), (self.projector.project(radec), AzAlt(mid_az, mid_dec))
+
         cx, cy = get_tile_coords(radec, zoom)
 
-        return cx, cy, az1, az2, bounds
+        return cx, cy, az1, az2, bounds, radec
 
     def get_sky_objects(self, zoom, x, y):
-        cx, cy, az1, az2, bounds = self.get_coords(zoom, x, y)
+        cx, cy, az1, az2, bounds, radec = self.get_coords(zoom, x, y)
+
         objects = load_tile(zoom, cx, cy, cache=self.cache)
+        #objects.append(("#center", radec[0], radec[1], 1))
         projected = perform_star_projections(objects, self.projector, (az1, az2))
 
         return bounds, projected
 
 
     def get_constellation_lines(self, zoom, x, y):
-        cx, cy, az1, az2, bounds = self.get_coords(zoom, x, y)
+        cx, cy, az1, az2, bounds, radec = self.get_coords(zoom, x, y)
         objects = load_line_tile(zoom, cx, cy, self.cache)
         projected = perform_line_projections(objects, self.projector, (az1, az2))
 
@@ -55,7 +59,12 @@ class IndexedSource(object):
 
 
     def get_labels(self, zoom, x, y):
-        pass
+        cx, cy, az1, az2, bounds, radec = self.get_coords(zoom, x, y)
+
+        objects = load_label_tile(zoom, cx, cy, cache=self.cache)
+        projected = perform_label_projections(objects, self.projector, (az1, az2))
+
+        return bounds, projected
 
 
 def load_tile(zoom, x, y, cache=None, prefix="stars-"):
@@ -96,6 +105,10 @@ def load_line_tile(zoom, x, y, cache=None):
     return load_tile(zoom, x, y, cache=cache, prefix="lines-")
 
 
+def load_label_tile(zoom, x, y, cache=None):
+    return load_tile(zoom, x, y, cache=cache, prefix="labels-")
+
+
 def project_point(projector, az1, az2, radec):
     p, r = projector.project(radec)
     if (abs(p - az1) > abs(p - az1 + 24) or
@@ -116,6 +129,21 @@ def perform_star_projections(sky_objects, projector, az_bounds):
 
         p, r = project_point(projector, az1, az2, (ra, dec))
         projected.append(Star(id, None, AzAlt(p, r), mag))
+
+    info("Completed %d projections after %.1f seconds" % (len(projected), time() - start))
+    return projected
+
+
+def perform_label_projections(sky_objects, projector, az_bounds):
+    start = time()
+    projected = []
+    az1, az2 = az_bounds
+
+    for sky_object in sky_objects:
+        id, ra, dec, name = sky_object
+
+        p, r = project_point(projector, az1, az2, (ra, dec))
+        projected.append(Star(id, name, AzAlt(p, r), None))
 
     info("Completed %d projections after %.1f seconds" % (len(projected), time() - start))
     return projected

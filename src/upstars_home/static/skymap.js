@@ -1,6 +1,6 @@
 
 var map = L.map('map', {
-    fadeAnimation: true,
+    //fadeAnimation: true,
     minZoom: 4,
     maxZoom: 5,
     maxBounds: [[45, -45], [-45, 45]],
@@ -21,6 +21,7 @@ layerControl.addTo(map);
 
 var starLayer = null;
 var constellationLayer = null;
+var labelLayer = null;
 
 function LoadTiles(az_offset, alt_offset) {
     /*L.tileLayer('/tiles/static/white.svg', {
@@ -34,6 +35,11 @@ function LoadTiles(az_offset, alt_offset) {
     if(constellationLayer !== null) {
         map.removeLayer(constellationLayer);
         layerControl.removeLayer(constellationLayer);
+    }
+
+    if(labelLayer !== null) {
+        map.removeLayer(labelLayer);
+        layerControl.removeLayer(labelLayer);
     }
 
     starLayer = L.tileLayer('/tiles/2012/3/16/14/53/0/10/{az_offset}/{alt_offset}/{z}/{x}/{y}.svg', {
@@ -54,6 +60,15 @@ function LoadTiles(az_offset, alt_offset) {
     });
     constellationLayer.addTo(map);
     layerControl.addOverlay(constellationLayer, "Constellation Lines");
+
+    labelLayer = L.tileLayer('/tiles/labels/2012/3/16/14/53/0/10/{az_offset}/{alt_offset}/{z}/{x}/{y}.svg', {
+        az_offset: az_offset,
+        alt_offset: alt_offset,
+        maxZoom: 9,
+        zIndex: 2,
+    });
+    labelLayer.addTo(map);
+    layerControl.addOverlay(labelLayer, "Labels");
 }
 
 LoadTiles(0, 0);
