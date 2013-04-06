@@ -25,6 +25,14 @@ def vector3_distance(v1, v2):
     return d
 
 
+NAMED_STARS = None
+
+def get_named_stars():
+    global NAMED_STARS
+    if not NAMED_STARS:
+        NAMED_STARS = [star for star in get_stars() if star.proper_name]
+
+    return NAMED_STARS
 
 def build_tile(params):
     hparts, vparts, zoom, x, y = params
@@ -46,17 +54,10 @@ def build_tile(params):
     tile_id = "%s-%s-%s" % (zoom, x, y + vparts / 2)
     tile_objects = []
 
-    for star in get_stars():
+    for star in get_named_stars():
         object_v = azalt_to_vector(star.ra, star.dec)
         if vector3_distance(mid_v, object_v) <= min_distance:
-            if zoom >= 6:
-                star_name = star.proper_name or star.bayer_flamsteed
-            else:
-                star_name = star.proper_name
-
-            if not star_name:
-                continue
-
+            star_name = star.proper_name
             obj = (star.id, star.ra, star.dec, star_name)
 
 #            # Some stars that are part of our constellations do not have
@@ -119,7 +120,7 @@ def build_indexes(zoom_range):
 def main():
     pool = multiprocessing.Pool(2)
     #build_tile(hparts, vparts, zoom, x, y)
-    pool.map(build_tile, build_indexes(range(5, 6)))
+    pool.map(build_tile, build_indexes(range(6, 7)))
     #map(build_tile, build_indexes([5]))
 
 

@@ -6,8 +6,8 @@ from time import time
 from zipfile import ZipFile
 from logging import info
 
-from upstars_lib.coordinates import LonLat, AzAlt, get_tile_coords, \
-    calculate_bounds, azalt_to_radec
+from upstars_lib.coordinates import LonLat, AzAlt, RaDec, get_tile_coords, \
+    calculate_bounds, azalt_to_radec, threed_distance
 from upstars_lib.projectors import AzAltProjector
 from upstars_lib.sky_objects import Star, Line
 
@@ -65,6 +65,24 @@ class IndexedSource(object):
         projected = perform_label_projections(objects, self.projector, (az1, az2))
 
         return bounds, projected
+
+
+    def get_star(self, az, alt):
+        radec = self.projector.unproject(AzAlt(az, alt))
+        zoom = 6
+        cx, cy = get_tile_coords(radec, zoom)
+        objects = load_tile(zoom, cx, cy, cache=self.cache)
+        nearest = None
+        nearest_d = None
+        for id, ra, dec, mag in objects:
+            object_azalt = self.projector.project(RaDec(ra, dec))
+            distance = threed_distance(AzAlt(az, alt), object_azalt)
+            if (not nearest) or (nearest_d > distance):
+                nearest = (id, object_azalt)
+                nearest_d = distance
+
+        return nearest
+
 
 
 def load_tile(zoom, x, y, cache=None, prefix="stars-"):

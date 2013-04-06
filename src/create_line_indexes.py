@@ -130,11 +130,11 @@ def build_index(zoom):
             yield hparts, vparts, zoom, x, y
 
 
-def build_indexes():
+def build_indexes(r):
     if not os.path.exists("../line-indexes"):
         os.mkdir("../line-indexes")
 
-    for zoom in range(5, 9):
+    for zoom in r:
         for hparts, vparts, zoom, x, y in build_index(zoom):
             yield hparts, vparts, zoom, x, y
 
@@ -143,7 +143,7 @@ from utils.vectors import V as vector
 def main():
     pool = multiprocessing.Pool(4)
 #    #build_tile(hparts, vparts, zoom, x, y)
-    pool.map(build_tile, build_indexes())
+    pool.map(build_tile, build_indexes(range(3, 5)))
 
 
 

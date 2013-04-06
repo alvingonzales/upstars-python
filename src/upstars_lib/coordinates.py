@@ -1,5 +1,6 @@
-from math import sin, asin, cos, acos, pi, floor, tan
+from math import sin, asin, cos, acos, pi, floor, tan, sqrt
 from collections import namedtuple
+from utils.rotation import azalt_to_vector
 
 RaDec = namedtuple("RaDec", "ra dec")
 AzAlt = namedtuple("AzAlt", "az, alt")
@@ -158,6 +159,21 @@ def get_tile_coords(coord, zoom):
     return hour_tile, degree_tile
 
 
+def vector3_distance(v1, v2):
+    x1, y1, z1 = v1
+    x2, y2, z2 = v2
+
+    d2 = (x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2
+    d = sqrt(d2)
+    return d
+
+
+def threed_distance(azalt1, azalt2):
+    v1 = azalt_to_vector(*azalt1)
+    v2 = azalt_to_vector(*azalt2)
+    return vector3_distance(v1, v2)
+
+
 def main():
     from datetime import datetime
 
@@ -172,7 +188,6 @@ def main():
             converted_radec = azalt_to_radec(utc, azalt, lonlat)
 
             assert radec == converted_radec, (radec, azalt, converted_radec)
-
 
 
 if __name__ == "__main__":

@@ -1,11 +1,18 @@
 import os
 import pickle
 import multiprocessing
+import shutil
+import zipfile
 from math import sqrt
 
 from upstars_lib.coordinates import get_tile_coords
 from utils.rotation import azalt_to_vector
 from utils.hyg_database import get_stars
+
+
+TEMP_INDEX_DIR = "../indexes"
+INDEX_DIR = "upstars_lib/sources/indexed_source"
+ZIP_PREFIX = "stars-"
 
 
 EXEMPTIONS = {
@@ -92,26 +99,38 @@ def build_index(zoom):
 
     for x in range(hparts):
         for y in range(vparts):
-
-            #build_tile(hparts, vparts, zoom, x, y)
-
             yield hparts, vparts, zoom, x, y
 
 
-def build_indexes(zoom_range):
-    if not os.path.exists("../indexes"):
-        os.mkdir("../indexes")
+def build_indexes(zoom):
+    pool = multiprocessing.Pool(2)
+    pool.map(build_tile, build_index(zoom))
 
-    for zoom in zoom_range:
-        for hparts, vparts, zoom, x, y in build_index(zoom):
-            yield hparts, vparts, zoom, x, y
+
+def zipify(zoom, zoom_dir):
+    zip_path = os.path.join(INDEX_DIR, "%s%s.zip" % (ZIP_PREFIX, zoom))
+    zf = zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED)
+    try:
+        for index_file in os.listdir(zoom_dir):
+            index_path = os.path.join(zoom_dir, index_file)
+            zf.write(index_path, index_file)
+    finally:
+        zf.close()
+
+
 
 def main():
-    pool = multiprocessing.Pool(2)
-    #build_tile(hparts, vparts, zoom, x, y)
-    pool.map(build_tile, build_indexes(range(6, 7)))
-    #map(build_tile, build_indexes([5]))
+    if not os.path.exists(TEMP_INDEX_DIR):
+        os.mkdir(TEMP_INDEX_DIR)
 
+    for zoom in range(6, 7):
+        zoom_dir = os.path.join(TEMP_INDEX_DIR, str(zoom))
+        if os.path.exists(zoom_dir):
+            shutil.rmtree(zoom_dir)
+
+        build_indexes(6)
+
+        zipify(zoom, zoom_dir)
 
     print "Complete!"
     raw_input()
