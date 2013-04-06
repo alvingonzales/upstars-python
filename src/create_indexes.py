@@ -1,21 +1,17 @@
 import os
 import pickle
 import multiprocessing
+from math import sqrt
 
 from upstars_lib.coordinates import get_tile_coords
 from utils.rotation import azalt_to_vector
-from math import sqrt
+from utils.hyg_database import get_stars
 
-_SKY_OBJECTS = None
 
-def get_all_sky_objects():
-    global _SKY_OBJECTS
-
-    from upstars_lib.sources.ondemand_source import get_all_sky_objects as _get_all_sky_objects
-    if not _SKY_OBJECTS:
-        _SKY_OBJECTS = _get_all_sky_objects()
-
-    return _SKY_OBJECTS
+EXEMPTIONS = {
+    33607: 0, # SAO6022 Camelopardalis
+    29924: 0, # SAO13788 Camelopardalis
+}
 
 
 def vector3_distance(v1, v2):
@@ -48,26 +44,32 @@ def build_tile(params):
     tile_id = "%s-%s-%s" % (zoom, x, y + vparts / 2)
     tile_objects = []
 
-    print "Building", tile_id
-
-    for sky_object in get_all_sky_objects().values():
-        object_v = azalt_to_vector(*sky_object.radec)
+    for star in get_stars():
+        object_v = azalt_to_vector(star.ra, star.dec)
         if vector3_distance(mid_v, object_v) <= min_distance:
-            obj = (sky_object.id, sky_object.name, sky_object.radec.ra, sky_object.radec.dec, sky_object.mag)
+            obj = (star.id, star.ra, star.dec, star.mag)
 
-            if sky_object.name:
+            # Some stars that are part of our constellations do not have
+            # B/F designation. Need to make sure they're shown at all zoom levels
+            if star.id in EXEMPTIONS and zoom >= EXEMPTIONS[star.id]:
                 tile_objects.append(obj)
-            continue
+                continue
 
-            if zoom >= 9:
+            # Always show stars if they have a proper name or part of a constellation
+            # excluding Gliese designation
+            if star.bayer_flamsteed or star.proper_name:
+                tile_objects.append(obj)
+                continue
+
+            # All stars visible by zoom 7
+            if zoom >= 7:
+                tile_objects.append(obj)
+                continue
+
+            if star.mag <= 6 + (zoom - 5):
                 tile_objects.append(obj)
 
-            if sky_object.mag <= 6 + (zoom - 5)*2:
-                tile_objects.append(obj)
-
-            continue
-
-    tile_objects.sort(key=lambda o:o.mag, reverse=True)
+    tile_objects.sort(key=lambda o: o[3], reverse=True)
 
     print "Tile: %s Objects: %d" % (tile_id, len(tile_objects))
 
@@ -96,19 +98,23 @@ def build_index(zoom):
             yield hparts, vparts, zoom, x, y
 
 
-def build_indexes():
+def build_indexes(zoom_range):
     if not os.path.exists("../indexes"):
         os.mkdir("../indexes")
 
-    for zoom in range(5, 10):
+    for zoom in zoom_range:
         for hparts, vparts, zoom, x, y in build_index(zoom):
             yield hparts, vparts, zoom, x, y
 
-
 def main():
-    pool = multiprocessing.Pool(4)
+    pool = multiprocessing.Pool(2)
     #build_tile(hparts, vparts, zoom, x, y)
-    pool.map(build_tile, build_indexes())
+    pool.map(build_tile, build_indexes(range(6, 7)))
+    #map(build_tile, build_indexes([5]))
+
+
+    print "Complete!"
+    raw_input()
 
 
 if __name__ == "__main__":
