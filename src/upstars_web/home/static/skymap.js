@@ -14,14 +14,16 @@ var SkyMap = function(id) {
         }
 
         if (L.Browser.ie) {
+            // IE does not properly enforce maxBounds w/ inertia on
             map_settings.inertia = false;
         }
 
         if (L.Browser.mobileWebkit) {
+            // iOS svg image glitches on load with fading on
             map_settings.fadeAnimation = false;
         }
 
-        self.map = L.map('map', map_settings);
+        self.map = L.map(id, map_settings);
         self.map.on("click", self.onclick);
 
         self.map.setView([0, 0], 2);
@@ -47,21 +49,24 @@ var SkyMap = function(id) {
             hour: d.getHours(),
             minute: d.getMinutes(),
             lon: 0,
-            lat: 10,
+            lat: 0,
             az_offset: 0,
             alt_offset: 0
         };
 
-        navigator.geolocation.getCurrentPosition(self.set_position);
-
-        //self.refresh();
-    };
-
-
-    self.set_position = function(position) {
-        self.apiParams.lon = position.coords.longitude.toFixed();
-        self.apiParams.lat = position.coords.latitude.toFixed();
-        self.refresh();
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    self.set_position(position.coords.longitude.toFixed(), position.coords.latitude.toFixed());
+                },
+                function(failed) {
+                    self.refresh();
+                },
+                { timeout: 3000 }
+            );
+        } else {
+            self.refresh();
+        }
     };
 
 
@@ -120,6 +125,22 @@ var SkyMap = function(id) {
         self.refresh();
     };
 
+
+    self.set_position = function(lon, lat) {
+        self.apiParams.lon = lon;
+        self.apiParams.lat = lat;
+        self.refresh();
+    };
+
+
+    self.setTimeAndPosition = function(year, month, day, hour, minute, lon, lat) {
+        self.apiParams.year = year;
+        self.apiParams.month = month;
+        self.apiParams.day = day;
+        self.apiParams.hour = hour;
+        self.apiParams.minute = minute;
+        self.set_position(lon, lat);
+    };
 
     self.onclick = function(e) {
         $.getJSON('/find', self.params({az: e.latlng.lng, alt: e.latlng.lat}), function(result) {
