@@ -4,28 +4,27 @@ var SkyMap = function(id) {
     self = {};
 
     self.init = function(id) {
-        self.map = L.map('map', {
-            fadeAnimation: true,
+        map_settings = {
             minZoom: 4,
             maxZoom: 6,
             maxBounds: [[45, -45], [-45, 45]],
+
             // Equirectangular projection
             crs: L.CRS.EPSG4326,
-            //crs: L.CRS.Simple
-
-            // inertia: true does not play well with maxBounds on IE
-        });
-        self.map.setView([0, 0], 2);
+        }
 
         if (L.Browser.ie) {
-            self.map.inertia = false;
+            map_settings.inertia = false;
         }
 
         if (L.Browser.mobileWebkit) {
-            self.map.fadeanimation = false;
+            map_settings.fadeAnimation = false;
         }
 
+        self.map = L.map('map', map_settings);
         self.map.on("click", self.onclick);
+
+        self.map.setView([0, 0], 2);
 
         self.layerControl = L.control.layers(
             {},
@@ -39,18 +38,29 @@ var SkyMap = function(id) {
         self.labelLayer = null;
         self.marker = null;
 
+        d = new Date()
+
         self.apiParams = {
-            year: 2013,
-            month: 2,
-            day: 16,
-            hour: 14,
-            minute: 53,
+            year: d.getFullYear(),
+            month: d.getMonth() + 1,
+            day: d.getDate(),
+            hour: d.getHours(),
+            minute: d.getMinutes(),
             lon: 0,
             lat: 10,
             az_offset: 0,
             alt_offset: 0
         };
 
+        navigator.geolocation.getCurrentPosition(self.set_position);
+
+        //self.refresh();
+    };
+
+
+    self.set_position = function(position) {
+        self.apiParams.lon = position.coords.longitude.toFixed();
+        self.apiParams.lat = position.coords.latitude.toFixed();
         self.refresh();
     };
 
