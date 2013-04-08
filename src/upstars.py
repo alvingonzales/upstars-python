@@ -20,4 +20,4 @@ if __name__ == "__main__":
                         status=200,
                         mimetype="text/plain")
 
-    app.run(host="0.0.0.0", debug=True, threaded=False)
+    app.run(host="0.0.0.0", debug=True, threaded=True)
