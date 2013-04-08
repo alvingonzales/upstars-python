@@ -58,16 +58,71 @@
         #toolbox .inner {
             margin-top: -15%;
         }
+
+        #top_left {
+            display: none;
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            z-index: 1;
+            padding: 1em;
+            padding-left: 60px;
+            padding-top: 0;
+            color: white;
+
+        }
+
+        #top_left {
+            font-size: 75%;
+            _background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'><rect x='0' y='0' height='100%' width='100%' fill='white' fill-opacity='.2' /></svg>");
+            background-color: rgba(255,255,255,0.2);
+            border-right: 1px solid rgba(255,255,255,0.5);
+            border-bottom: 1px solid rgba(255,255,255,0.5);
+        }
+
+        #top_left a {
+            color: white;
+        }
+
+        .marker {
+            background: transparent;
+        }
     </style>
     <script src="static/jquery/jquery-1.9.1.min.js"></script>
     <script src="static/jquery/jquery.knob.js"></script>
 </head>
 <body>
+    <div id="top_left">
+        <div id="information">
+            <div>
+                <h1>Polaris</h1>
+                <h2>HIP 12345, Gleise 25</h2>
+                spectral class: MVe<br/>
+                b-v: .25<br/>
+                magnitude: 4.3<br/>
+                distance: 100 LY<br/>
+                ra/dec (J2000): [23, 45]<br/>
+                <br/>
+                <a href="http://simbad.u-strasbg.fr/simbad/sim-id?Ident=HIP+117919" target="_blank">SIMBAD Lookup</a>
+            </div>
+        </div>
+    </div>
+
     <div id="center">
         <div id="telescope_controls">
             <input type="text" value="0" id="telescope_alt" name="dec" data-thickness=".7" data-cursor="60" data-anglearc="75" data-min="0" data-max="75" data-angleoffset="270" data-height="150" data-width="150" data-displayinput="false" />
             <input type="text" value="0" id="telescope_az" name="ra" data-thickness=".7" data-cursor="60" data-min="0" data-max="360" data-height="150" data-width="150" data-displayinput="false" /><br/>
-            <input type="button" value="Aim" onclick="map.aim(telescope_az.value, telescope_alt.value);telescope_controls.style.display='none'" />
+            <input type="button" value="Aim" onclick="telescope_controls_aim()" />
+            <script>
+                function telescope_controls_toggle() {
+                    $('#telescope_controls').fadeToggle('slow');
+                }
+
+                function telescope_controls_aim() {
+                    map.aim(telescope_az.value, telescope_alt.value);
+                    telescope_controls_toggle();
+                }
+            </script>
         </div>
         <div id="date_location_controls">
             <p>
@@ -90,16 +145,12 @@
             <input type="button" value="Apply" onclick="apply_date_location()" />
             <script>
                 if (!navigator.geolocation) {
-                    use_current_location_button.display="None";
+                    $('#use_current_location_button').hide();
                 }
 
 
                 function toggle_date_location_controls() {
-                    if (date_location_controls.style.display !== "block") {
-                        date_location_controls.style.display = "block";
-                    } else {
-                        date_location_controls.style.display = "none";
-                    }
+                    $('#date_location_controls').fadeToggle('slow');
                 }
 
 
@@ -148,7 +199,7 @@
 
     <div id="toolbox">
         <div class="inner">
-            <input type="button" value="Aiming Control" onclick="telescope_controls.style.display='block'" />
+            <input type="button" value="Aiming Control" onclick="telescope_controls_toggle()" />
             <input type="button" value="Time / Location" onclick="toggle_date_location_controls()" />
         </div>
     </div>

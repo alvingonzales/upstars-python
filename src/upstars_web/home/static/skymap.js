@@ -60,9 +60,10 @@ var SkyMap = function(id) {
                     self.set_position(position.coords.longitude.toFixed(), position.coords.latitude.toFixed());
                 },
                 function(failed) {
+                    alert("Could not get current location");
                     self.refresh();
                 },
-                { timeout: 3000 }
+                { timeout: 5000 }
             );
         } else {
             self.refresh();
@@ -142,20 +143,38 @@ var SkyMap = function(id) {
         self.set_position(lon, lat);
     };
 
+
     self.onclick = function(e) {
         $.getJSON('/find', self.params({az: e.latlng.lng, alt: e.latlng.lat}), function(result) {
             if (self.marker !== null) {
                 self.map.removeLayer(self.marker);
             }
 
+            marker_url = "/static/marker.svg";
+            if (L.Browser.webkit) {
+                // fixes freezed animation in Chrome
+                // and animation glitch in iOS (sometimes)
+                // has to do with cached svg files
+                d = new Date()
+                suffix = "".concat(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds());
+                marker_url = marker_url + "?" + suffix;
+            }
+
             self.marker = L.marker([result[2], result[1]], {
                 icon: L.icon({
-                    iconUrl: "static/marker.svg",
+                    iconUrl: marker_url,
                     iconSize: [32, 32],
                     iconAnchor: [16, 16]
                 })
             });
-            self.marker.bindPopup(result[0]);
+
+            $('#top_left').fadeOut('slow', function() {
+                $('#top_left h1').text("STAR " + result[0]);
+                $('#top_left').fadeIn('slow');
+            });
+
+
+            //self.marker.bindPopup(result[0]);
             self.marker.addTo(self.map);
 
             //alert(result);
